@@ -33,6 +33,7 @@
 	<properties>
 		<openMRSVersion>1.9.4-SNAPSHOT</openMRSVersion>
         <logicModuleVersion>0.5.2</logicModuleVersion>
+        <derbyVersion>10.10.1.1</derbyVersion>
 
         <db.url><![CDATA[jdbc:mysql://localhost:3306/openmrs?autoReconnect=true&sessionVariables=storage_engine=InnoDB&useUnicode=true&characterEncoding=UTF-8]]></db.url>
         <db.user>root</db.user>
@@ -190,47 +191,47 @@
                 </executions>
             </plugin>
             <plugin>
-                <groupId>org.apache.tomcat.maven</groupId>
-                <artifactId>tomcat7-maven-plugin</artifactId>
-                <!-- or if you want to use tomcat 6.x
-                <artifactId>tomcat6-maven-plugin</artifactId>
-                -->
-                <version>2.1</version>
-                <configuration>
-                    <!-- http port -->
-                    <port>9090</port>
-                    <!-- application path always starts with /-->
-                    <path>/</path>
-                    <!-- optional path to a context file -->
-                    <contextFile>/</contextFile>
-                <!-- optional system propoerties you want to add -->
-                <systemProperties>
-                     <appserver.base>${basedir}/target/appserver-base</appserver.base>
-                     <appserver.home>${basedir}/target/appserver-home</appserver.home>
-                    <derby.system.home>${basedir}/appserver-base/logs</derby.system.home>
-                     <java.io.tmpdir>${basedir}/target</java.io.tmpdir>
-                </systemProperties>
-                <!-- if you want to use test dependencies rather than only runtime -->
-                <useTestClasspath>false</useTestClasspath>
-                 <!-- optional if you want to add some extra directories into the classloader -->
-                <additionalClasspathDirs>
-                    <additionalClasspathDir></additionalClasspathDir>
-                </additionalClasspathDirs>
+        <groupId>org.apache.tomcat.maven</groupId>
+        <artifactId>tomcat7-maven-plugin</artifactId>
+        <version>2.1</version>
+        <executions>
+          <execution>
+            <id>tomcat-run</id>
+            <goals>
+              <goal>exec-war-only</goal>
+            </goals>
+            <phase>package</phase>
+            <configuration>
+              <warRunDependencies>
+                <warRunDependency>
+                  <dependency>
+                    <groupId>org.openmrs.web</groupId>
+                    <artifactId>openmrs-webapp</artifactId>
+                    <version>${openMRSVersion}</version>
+                    <type>war</type>
+                  </dependency>
+                  <contextPath>/</contextPath>
+                </warRunDependency>
+              </warRunDependencies>
+              <!-- naming is disabled by default so use true to enable it -->
+              <enableNaming>true</enableNaming>
+              <!-- extra dependencies to add jdbc driver, mail jars, etc. -->
+              <extraDependencies>
+                <extraDependency>
+                  <groupId>org.apache.derby</groupId>
+                  <artifactId>derby</artifactId>
+                  <version>10.1.3.1</version>
+                </extraDependency>
+                <extraDependency>
+                  <groupId>javax.mail</groupId>
+                  <artifactId>mail</artifactId>
+                  <version>1.4</version>
+                </extraDependency>
+              </extraDependencies>
             </configuration>
-            <!-- For any extra dependencies needed when running embedded Tomcat (not WAR dependencies) add them below -->
-            <dependencies>
-                <dependency>
-                    <groupId>org.apache.derby</groupId>
-                    <artifactId>derby</artifactId>
-                    <version>${derbyVersion}</version>
-                </dependency>
-                <dependency>
-                    <groupId>javax.mail</groupId>
-                    <artifactId>mail</artifactId>
-                    <version>1.4</version>
-                </dependency>
-            </dependencies>
-            </plugin>
+          </execution>
+        </executions>
+      </plugin>
         </plugins>
     </build>
 
