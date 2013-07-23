@@ -1,0 +1,362 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--##putting in some invalid xml to break build-->
+
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
+	<modelVersion>4.0.0</modelVersion>
+
+	<groupId>org.openmrs.distro</groupId>
+	<artifactId>devel-module-archetype</artifactId>
+	<version>1.0-SNAPSHOT</version>
+	<packaging>pom</packaging>
+	<name>Module Development Archetype</name>
+	<description>Archetype and scripts used for module development
+    </description>
+	<url>https://wiki.openmrs.org/x/rwBkAg</url>
+	
+	<developers>
+		<developer>
+			<name>h3llborn</name>
+		</developer>
+	</developers>
+	
+	<organization>
+		<name>OpenMRS</name>
+		<url>http://openmrs.org</url>
+	</organization>
+
+	<scm>
+		<connection>scm:git:git@github.com:h3llborn/openmrs-devel-module-archetype.git</connection>
+		<developerConnection>scm:git:git@github.com:h3llborn/openmrs-devel-module-archetype.git</developerConnection>
+		<url>scm:git:git@github.com:h3llborn/openmrs-devel-module-archetype.git</url>
+	</scm>
+
+	<properties>
+		<openMRSVersion>1.9.4-SNAPSHOT</openMRSVersion>
+        <logicModuleVersion>0.5.2</logicModuleVersion>
+
+        <db.url><![CDATA[jdbc:mysql://localhost:3306/openmrs?autoReconnect=true&sessionVariables=storage_engine=InnoDB&useUnicode=true&characterEncoding=UTF-8]]></db.url>
+        <db.user>root</db.user>
+        <db.password>Admin123</db.password>
+
+    </properties>
+
+    <dependencies>
+        <dependency>
+            <!-- note the non-standard type  -->
+            <groupId>org.openmrs.module</groupId>
+            <artifactId>logic-omod</artifactId>
+            <version>${logicModuleVersion}</version>
+            <type>omod</type>
+        </dependency>
+
+        <dependency>
+            <groupId>org.openmrs.web</groupId>
+            <artifactId>openmrs-webapp</artifactId>
+            <version>${openMRSVersion}</version>
+            <type>war</type>
+        </dependency>
+    </dependencies>
+
+	<build>
+		<pluginManagement>
+			<plugins>
+				<plugin>
+					<groupId>org.apache.maven.plugins</groupId>
+					<artifactId>maven-compiler-plugin</artifactId>
+					<configuration>
+						<target>1.6</target>
+						<source>1.6</source>
+					</configuration>
+				</plugin>
+				<plugin>
+					<groupId>org.apache.maven.plugins</groupId>
+					<artifactId>maven-dependency-plugin</artifactId>
+					<version>2.4</version>
+				</plugin>
+			</plugins>
+		</pluginManagement>
+
+        <plugins>
+            <!--
+            Copy all of the modules we depend on (this also gets extra jars we don't need).
+            We'll end up with things like "reporting-omod-0.7.2.1.jar".
+            -->
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-dependency-plugin</artifactId>
+                <version>2.4</version>
+                <executions>
+                    <execution>
+                        <id>copy-dependencies</id>
+                        <phase>package</phase>
+                        <goals>
+                            <goal>copy-dependencies</goal>
+                        </goals>
+                        <configuration>
+                            <outputDirectory>${project.build.directory}/dependencies</outputDirectory>
+                            <!-- the event module has the non-standard groupId org.openmrs -->
+                            <includeGroupIds>org.openmrs.module,org.openmrs</includeGroupIds>
+                            <excludeTransitive>true</excludeTransitive>
+                        </configuration>
+                    </execution>
+
+                </executions>
+            </plugin>
+
+            <!--
+            Rename things like "reporting-omod-0.7.2.1.jar" to "reporting-0.7.2.1.omod".
+            This also drops everything that doesn't match "*-omod-*.jar"
+            -->
+            <plugin>
+                <artifactId>maven-antrun-plugin</artifactId>
+                <version>1.7</version>
+                <executions>
+                    <execution>
+                        <id>rename-jars-to-omod</id>
+                        <phase>package</phase>
+                        <configuration>
+                            <target>
+                                <move todir="${project.build.directory}/distro">
+                                    <fileset dir="${project.build.directory}/dependencies" />
+                                    <mapper type="regexp" from="^(.+)-omod-(.+)\.jar" to="\1-\2.omod" />
+                                </move>
+                            </target>
+                        </configuration>
+                        <goals>
+                            <goal>run</goal>
+                        </goals>
+                    </execution>
+
+                    <execution>
+                        <id>move-war-to-dist</id>
+                        <phase>package</phase>
+                        <configuration>
+                            <target>
+                                <move todir="${project.build.directory}/distro">
+                                    <fileset dir="${project.build.directory}/dependencies">
+                                        <include name="*.war"/>
+                                    </fileset>
+                                </move>
+                            </target>
+                        </configuration>
+                        <goals>
+                            <goal>run</goal>
+                        </goals>
+                    </execution>
+
+                    <!-- For some reason the serialization.xstream-omod artifact is .omod, not .jar -->
+                    <execution>
+                        <id>rename-omods-to-omod</id>
+                        <phase>package</phase>
+                        <configuration>
+                            <target>
+                                <move todir="${project.build.directory}/distro">
+                                    <fileset dir="${project.build.directory}/dependencies" />
+                                    <mapper type="regexp" from="^(.+)-omod-(.+)\.omod" to="\1-\2.omod" />
+                                </move>
+                            </target>
+                        </configuration>
+                        <goals>
+                            <goal>run</goal>
+                        </goals>
+                    </execution>
+                </executions>
+            </plugin>
+
+            <!--
+            Assemble all of these omods into a zip file
+            -->
+            <plugin>
+                <artifactId>maven-assembly-plugin</artifactId>
+                <version>2.3</version>
+                <configuration>
+                    <descriptors>
+                        <descriptor>${basedir}/src/main/assembly/assembly.xml</descriptor>
+                    </descriptors>
+                </configuration>
+                <executions>
+                    <execution>
+                        <id>make-assembly</id>
+                        <phase>package</phase>
+                        <goals>
+                            <goal>single</goal>
+                        </goals>
+                    </execution>
+                </executions>
+            </plugin>
+        </plugins>
+    </build>
+
+    <profiles>
+        <profile>
+            <id>setupdatabase</id>
+            <activation>
+                <property>
+                    <name>setupDatabase</name>
+                    <value>true</value>
+                </property>
+            </activation>
+            <build>
+            <plugins>
+            <plugin>
+            <groupId>org.apache.maven.plugins</groupId>
+            <artifactId>maven-dependency-plugin</artifactId>
+            <executions>
+            </executions>
+            </plugin>
+            <plugin>
+            <groupId>org.liquibase</groupId>
+            <artifactId>liquibase-maven-plugin</artifactId>
+            <version>2.0.1</version>
+            <configuration>
+            <!--<changeLogFile>src/main/resources/db-changelog.xml</changeLogFile>-->
+            <driver>com.mysql.jdbc.Driver</driver>
+            <url>${db.url}</url>
+            <username>${db.user}</username>
+            <password>${db.password}</password>
+            </configuration>
+            <dependencies>
+            <dependency>
+            <groupId>mysql</groupId>
+            <artifactId>mysql-connector-java</artifactId>
+            <version>5.1.8</version>
+            </dependency>
+            <dependency>
+            <groupId>org.openmrs.liquibase.ext</groupId>
+            <artifactId>modify-column</artifactId>
+            <version>2.0.2</version>
+            </dependency>
+            <dependency>
+            <groupId>org.openmrs.liquibase.ext</groupId>
+            <artifactId>identity-insert</artifactId>
+            <version>1.2.1</version>
+            </dependency>
+            <dependency>
+            <groupId>org.openmrs.api</groupId>
+            <artifactId>openmrs-api</artifactId>
+            <version>${openMRSVersion}</version>
+            <type>jar</type>
+            <scope>compile</scope>
+            </dependency>
+
+            </dependencies>
+            <executions>
+                <execution>
+                <id>empty-db-create-schema</id>
+                <phase>generate-resources</phase>
+                <configuration>
+                <driver>com.mysql.jdbc.Driver</driver>
+                <changeLogFile>liquibase-schema-only.xml</changeLogFile>
+                <verbose>true</verbose>
+                <dropFirst>false</dropFirst>
+                <systemProperties>
+                <property>
+                <name>liquibase.databaseChangeLogTableName</name>
+                <value>liquibasechangelog</value>
+                </property>
+                <property>
+                <name>liquibase.databaseChangeLogLockTableName</name>
+                <value>liquibasechangeloglock</value>
+                </property>
+                </systemProperties>
+                </configuration>
+                <goals>
+                <goal>update</goal>
+                </goals>
+                </execution>
+                <execution>
+                <id>empty-db-add-core-data</id>
+                <phase>generate-resources</phase>
+                <configuration>
+                <driver>com.mysql.jdbc.Driver</driver>
+                <changeLogFile>liquibase-core-data.xml</changeLogFile>
+                <url>${db.url}</url>
+                <username>${db.user}</username>
+                <password>${db.password}</password>
+                <verbose>true</verbose>
+                <dropFirst>false</dropFirst>
+                <systemProperties>
+                <property>
+                <name>liquibase.databaseChangeLogTableName</name>
+                <value>liquibasechangelog</value>
+                </property>
+                <property>
+                <name>liquibase.databaseChangeLogLockTableName</name>
+                <value>liquibasechangeloglock</value>
+                </property>
+                </systemProperties>
+                </configuration>
+                <goals>
+                <goal>update</goal>
+                </goals>
+                </execution>
+                <execution>
+                <id>empty-db-update-to-latest</id>
+                <phase>generate-resources</phase>
+                <configuration>
+                <driver>com.mysql.jdbc.Driver</driver>
+                <changeLogFile>liquibase-update-to-latest.xml</changeLogFile>
+                <url>${db.url}</url>
+                <username>${db.user}</username>
+                <password>${db.password}</password>
+                <verbose>true</verbose>
+                <dropFirst>false</dropFirst>
+                <systemProperties>
+                <property>
+                <name>liquibase.databaseChangeLogTableName</name>
+                <value>liquibasechangelog</value>
+                </property>
+                <property>
+                <name>liquibase.databaseChangeLogLockTableName</name>
+                <value>liquibasechangeloglock</value>
+                </property>
+                </systemProperties>
+                </configuration>
+                <goals>
+                <goal>update</goal>
+                </goals>
+                </execution>
+
+                </executions>
+            </plugin>
+
+        </plugins>
+
+    </build>
+    </profile>
+    </profiles>
+
+	<repositories>
+		<repository>
+			<id>openmrs-repo</id>
+			<name>OpenMRS Nexus Repository</name>
+			<url>http://mavenrepo.openmrs.org/nexus/content/repositories/public</url>
+		</repository>
+	</repositories>
+
+	<pluginRepositories>
+		<pluginRepository>
+			<id>openmrs-repo</id>
+			<name>OpenMRS Nexus Repository</name>
+			<url>http://mavenrepo.openmrs.org/nexus/content/repositories/public</url>
+			<snapshots>
+				<enabled>false</enabled>
+			</snapshots>
+		</pluginRepository>
+	</pluginRepositories>
+	
+	<distributionManagement>
+		<repository>
+			<id>openmrs-repo-modules</id>
+			<name>Modules</name>
+			<url>http://mavenrepo.openmrs.org/nexus/content/repositories/modules/</url>
+		</repository>
+        <snapshotRepository>
+            <id>openmrs-repo-snapshots</id>
+            <name>OpenMRS Snapshots</name>
+            <url>http://mavenrepo.openmrs.org/nexus/content/repositories/snapshots</url>
+        </snapshotRepository>
+	</distributionManagement>
+	
+
+</project>
