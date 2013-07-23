@@ -202,13 +202,13 @@
                     <!-- application path always starts with /-->
                     <path>/</path>
                     <!-- optional path to a context file -->
-                    <contextFile>/Users/olamy/dev/tomcat-context-archiva-gmail.xml</contextFile>
+                    <contextFile>/</contextFile>
                 <!-- optional system propoerties you want to add -->
                 <systemProperties>
-                     <appserver.base>/Users/olamy/dev/sources/tomcat/maven-plugin-svn/target/checkout/target/appserver-base</appserver.base>
-                     <appserver.home>/Users/olamy/dev/sources/tomcat/maven-plugin-svn/target/checkout/target/appserver-home</appserver.home>
-                    <derby.system.home>/Users/olamy/dev/sources/tomcat/maven-plugin-svn/target/checkout/target/appserver-base/logs</derby.system.home>
-                     <java.io.tmpdir>/Users/olamy/dev/sources/tomcat/maven-plugin-svn/target/checkout/target</java.io.tmpdir>
+                     <appserver.base>${basedir}/target/appserver-base</appserver.base>
+                     <appserver.home>${basedir}/target/appserver-home</appserver.home>
+                    <derby.system.home>${basedir}/appserver-base/logs</derby.system.home>
+                     <java.io.tmpdir>${basedir}/target</java.io.tmpdir>
                 </systemProperties>
                 <!-- if you want to use test dependencies rather than only runtime -->
                 <useTestClasspath>false</useTestClasspath>
