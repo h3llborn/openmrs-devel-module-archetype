@@ -96,6 +96,27 @@
                 <artifactId>maven-dependency-plugin</artifactId>
                 <version>2.4</version>
                 <executions>
+                    <!--
+                    Copy openmrs webapp to /target and give set name to ${project.build.finalName}
+                    so that we can deploy it without packageing the archetype and deploying it.
+                    -->
+                    <execution>
+                      <goals>
+                        <goal>copy</goal>
+                      </goals>
+                      <configuration>
+                        <artifactItems>
+                          <artifactItem>
+                            <groupId>org.openmrs.web</groupId>
+                            <artifactId>openmrs-webapp</artifactId>
+                            <version>${openMRSVersion}</version>
+                            <type>war</type>
+                            <outputDirectory>${project.build.directory}/</outputDirectory>
+                            <destFileName>${project.build.finalName}.war</destFileName>
+                          </artifactItem>
+                        </artifactItems>
+                      </configuration>
+                    </execution>
                     <execution>
                         <id>copy-dependencies</id>
                         <phase>package</phase>
@@ -109,7 +130,6 @@
                             <excludeTransitive>true</excludeTransitive>
                         </configuration>
                     </execution>
-
                 </executions>
             </plugin>
 
@@ -118,17 +138,8 @@
                 <artifactId>tomcat7-maven-plugin</artifactId>
                 <version>2.0</version>
                 <configuration>
-                    <warRunDependencies>
-                        <warRunDependency>
-                            <dependency>
-                                 <groupId>org.openmrs.web</groupId>
-                                 <artifactId>openmrs-webapp</artifactId>
-                                 <version>${openMRSVersion}</version>
-                                 <type>war</type>
-                            </dependency>
-                            <contextPath>/</contextPath>
-                        </warRunDependency>
-                    </warRunDependencies>
+                  <warFile>${project.build.directory}/${project.build.finalName}.war</warFile>
+                    <ignorePackaging>true</ignorePackaging>
                 </configuration>
             </plugin>
             <!--
@@ -154,13 +165,14 @@
                             <goal>run</goal>
                         </goals>
                     </execution>
-<!--
+                    <!-- move webapp.war to build directory-->
+                    <!--
                     <execution>
-                        <id>move-war-to-dist</id>
+                        <id>move-war-to-deploy</id>
                         <phase>package</phase>
                         <configuration>
                             <target>
-                                <move todir="${project.build.directory}/distro">
+                                <move todir="${project.build.directory}/">
                                     <fileset dir="${project.build.directory}/dependencies">
                                         <include name="*.war"/>
                                     </fileset>
@@ -171,7 +183,7 @@
                             <goal>run</goal>
                         </goals>
                     </execution>
--->
+                -->
 
                     <!-- For some reason the serialization.xstream-omod artifact is .omod, not .jar -->
                     <execution>
