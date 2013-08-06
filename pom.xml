@@ -7,7 +7,7 @@
 	<groupId>org.openmrs.distro</groupId>
 	<artifactId>devel-module-archetype</artifactId>
 	<version>1.0-SNAPSHOT</version>
-	<packaging>pom</packaging>
+	<packaging>war</packaging>
 	<name>Module Development Archetype</name>
 	<description>Archetype and scripts used for module development
     </description>
@@ -79,9 +79,8 @@
 					<version>2.4</version>
 				</plugin>
                 <plugin>
-                    <groupId>org.apache.tomcat.maven</groupId>
-                    <artifactId>tomcat7-maven-plugin</artifactId>
-                     <version>2.1</version>
+                    <groupId>org.eclipse.jetty</groupId>
+                    <artifactId>jetty-maven-plugin</artifactId>
                 </plugin>
 			</plugins>
 		</pluginManagement>
@@ -97,7 +96,7 @@
                 <version>2.4</version>
                 <executions>
                     <!--
-                    Copy openmrs webapp to /target and give set name to ${project.build.finalName}
+                    Copy openmrs webapp to /src/main/webapp and give set name to ${project.build.finalName}
                     so that we can deploy it without packageing the archetype and deploying it.
                     -->
                     <execution>
@@ -111,7 +110,7 @@
                             <artifactId>openmrs-webapp</artifactId>
                             <version>${openMRSVersion}</version>
                             <type>war</type>
-                            <outputDirectory>${project.build.directory}/</outputDirectory>
+                            <outputDirectory>${basedir}/src/main/webapp/</outputDirectory>
                             <destFileName>${project.build.finalName}.war</destFileName>
                           </artifactItem>
                         </artifactItems>
@@ -131,16 +130,6 @@
                         </configuration>
                     </execution>
                 </executions>
-            </plugin>
-
-            <plugin>
-                <groupId>org.apache.tomcat.maven</groupId>
-                <artifactId>tomcat7-maven-plugin</artifactId>
-                <version>2.0</version>
-                <configuration>
-                  <warFile>${project.build.directory}/${project.build.finalName}.war</warFile>
-                    <ignorePackaging>true</ignorePackaging>
-                </configuration>
             </plugin>
             <!--
             Rename things like "reporting-omod-0.7.2.1.jar" to "reporting-0.7.2.1.omod".
