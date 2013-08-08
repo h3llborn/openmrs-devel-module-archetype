@@ -1,2 +1,0 @@
-devel-module-archetype
-======================
